@@ -49,7 +49,6 @@ pipeline {
             agent {
                 docker {
                     image 'custom-jenkins-ansible'
-                    args '--network cicd-frontend'
                     reuseNode true
                 }
             }
@@ -71,7 +70,6 @@ pipeline {
             agent {
                 docker {
                     image 'custom-jenkins-ansible'
-                    args '--network cicd-frontend'
                     reuseNode true
                 }
             }
@@ -83,7 +81,6 @@ pipeline {
             agent {
                 docker {
                     image 'custom-jenkins-ansible'
-                    args '--network cicd-frontend'
                     reuseNode true
                 }
             }
