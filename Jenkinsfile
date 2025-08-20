@@ -47,7 +47,7 @@ pipeline {
     stages {
         stage('Install Ansible & Lint') {
             steps {
-                // sh 'pip install ansible ansible-lint' // <-- Uncomment if needed
+                sh 'pip install ansible ansible-lint' // <-- Uncomment if needed
                 sh 'ansible --version || true' // Check if Ansible is installed
                 sh 'ansible-lint --version || true' // Check if ansible-lint is installed
             }
