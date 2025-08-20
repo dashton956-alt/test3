@@ -50,7 +50,6 @@ pipeline {
                 docker {
                     image 'custom-jenkins-ansible'
                     args '--network cicd-frontend'
-                    label 'docker'
                     reuseNode true
                 }
             }
@@ -71,7 +70,6 @@ pipeline {
                 docker {
                     image 'custom-jenkins-ansible'
                     args '--network cicd-frontend'
-                    label 'docker'
                     reuseNode true
                 }
             }
@@ -84,7 +82,6 @@ pipeline {
                 docker {
                     image 'custom-jenkins-ansible'
                     args '--network cicd-frontend'
-                    label 'docker'
                     reuseNode true
                 }
             }
