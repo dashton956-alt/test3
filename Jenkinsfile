@@ -54,6 +54,8 @@ pipeline {
                 }
             }
             steps {
+                sh 'echo "DEBUG: Agent image info:" && cat /etc/os-release || true'
+                sh 'echo "DEBUG: Docker version:" && (docker --version || echo "docker not found")'
                 withCredentials([string(credentialsId: params.GITHUB_CREDS_ID, variable: 'GIT_TOKEN')]) {
                     checkout([$class: 'GitSCM',
                         branches: [[name: params.GIT_BRANCH]],
