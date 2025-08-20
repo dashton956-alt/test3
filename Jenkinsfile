@@ -14,7 +14,7 @@ pipeline {
         )
         string(
             name: 'GIT_REPO',
-            defaultValue: 'https://github.com/your-org/your-ansible-repo.git',
+            defaultValue: 'https://github.com/dashton956-alt/test3.git',
             description: 'GitHub repository URL containing the playbook.'
         )
         string(
