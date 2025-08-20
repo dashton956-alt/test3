@@ -1,14 +1,5 @@
 pipeline {
     agent none
-    options {
-    throttleJobProperty(
-        maxConcurrentPerNode: 6,
-        maxConcurrentTotal: 6,
-        categories: [],
-        throttleEnabled: true,
-        throttleOption: 'project'
-    )
-}
 
     parameters {
         choice(
