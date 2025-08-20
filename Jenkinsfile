@@ -34,11 +34,11 @@ pipeline {
         )
     }
 
-    environment {
-        // GITHUB_CREDENTIALS = credentials('github-creds-id') // <-- Uncomment and set if using private repo
-        // NETBOX_TOKEN = credentials('netbox-token-id') // <-- Uncomment and set if deploying to NetBox
-        // OTHER_DEPLOY_CRED = credentials('other-deploy-creds-id') // <-- For other targets
-    }
+    // environment {
+    //     GITHUB_CREDENTIALS = credentials('github-creds-id') // <-- Uncomment and set if using private repo
+    //     NETBOX_TOKEN = credentials('netbox-token-id') // <-- Uncomment and set if deploying to NetBox
+    //     OTHER_DEPLOY_CRED = credentials('other-deploy-creds-id') // <-- For other targets
+    // }
 
     stages {
         stage('Install Ansible & Lint') {
@@ -105,12 +105,14 @@ pipeline {
         }
         stage('Notifications') {
             steps {
+                echo 'No notifications configured.'
                 // slackSend(color: 'good', message: "Ansible Lint & Deploy Pipeline Succeeded! Build #${BUILD_NUMBER}") // <-- Uncomment and configure
                 // emailext(subject: 'Pipeline Success', body: "Build #${BUILD_NUMBER} succeeded", recipientProviders: [developers()]) // <-- Uncomment and configure
             }
         }
         stage('Cleanup') {
             steps {
+                echo 'No cleanup steps.'
                 // sh 'rm -f sensitive_file' // <-- Add cleanup commands as needed
             }
         }
@@ -122,6 +124,7 @@ pipeline {
             // archiveArtifacts artifacts: '**/deploy.log', allowEmptyArchive: true // <-- Uncomment to archive deploy logs
         }
         failure {
+            echo 'No failure notifications configured.'
             // slackSend(color: 'danger', message: "Ansible Lint & Deploy Pipeline FAILED! Build #${BUILD_NUMBER}") // <-- Uncomment and configure
             // emailext(subject: 'Pipeline Failure', body: "Build #${BUILD_NUMBER} failed", recipientProviders: [developers()]) // <-- Uncomment and configure
         }
