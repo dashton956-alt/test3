@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent none
 
     parameters {
         choice(
@@ -46,13 +46,34 @@ pipeline {
 
     stages {
         stage('Install Ansible & Lint') {
+            agent {
+                docker {
+                    image 'custom-jenkins-ansible'
+                    args '--network cicd-frontend'
+                    label 'docker'
+                    reuseNode true
+                }
+            }
+            options {
+                throttle(concurrentBuilds: 6)
+            }
             steps {
-                sh 'pip install ansible ansible-lint' // <-- Uncomment if needed
-                sh 'ansible --version || true' // Check if Ansible is installed
-                sh 'ansible-lint --version || true' // Check if ansible-lint is installed
+                sh 'ansible --version || true'
+                sh 'ansible-lint --version || true'
             }
         }
         stage('Checkout') {
+            agent {
+                docker {
+                    image 'custom-jenkins-ansible'
+                    args '--network cicd-frontend'
+                    label 'docker'
+                    reuseNode true
+                }
+            }
+            options {
+                throttle(concurrentBuilds: 6)
+            }
             steps {
                 withCredentials([string(credentialsId: params.GITHUB_CREDS_ID, variable: 'GIT_TOKEN')]) {
                     checkout([$class: 'GitSCM',
@@ -66,11 +87,33 @@ pipeline {
             }
         }
         stage('Lint Ansible Playbook') {
+            agent {
+                docker {
+                    image 'custom-jenkins-ansible'
+                    args '--network cicd-frontend'
+                    label 'docker'
+                    reuseNode true
+                }
+            }
+            options {
+                throttle(concurrentBuilds: 6)
+            }
             steps {
                 sh "ansible-lint ${params.PLAYBOOK_PATH} | tee ansible-lint.log"
             }
         }
         stage('Copy & Commit Playbook') {
+            agent {
+                docker {
+                    image 'custom-jenkins-ansible'
+                    args '--network cicd-frontend'
+                    label 'docker'
+                    reuseNode true
+                }
+            }
+            options {
+                throttle(concurrentBuilds: 6)
+            }
             steps {
                 withCredentials([string(credentialsId: params.GITHUB_CREDS_ID, variable: 'GIT_TOKEN')]) {
                     script {
@@ -88,6 +131,7 @@ pipeline {
             }
         }
         stage('Deploy') {
+            agent { label 'master' }
             when {
                 anyOf {
                     expression { params.DEPLOY_TARGET == 'netbox' }
@@ -99,27 +143,29 @@ pipeline {
                     if (params.DEPLOY_TARGET == 'netbox') {
                         withCredentials([string(credentialsId: params.NETBOX_CREDS_ID, variable: 'NETBOX_TOKEN')]) {
                             echo 'Deploying playbook to NetBox...'
-                            // sh 'ansible-playbook -i ${params.INVENTORY} --extra-vars "token=$NETBOX_TOKEN build_number=${BUILD_NUMBER}" ${params.PLAYBOOK_PATH}' // <-- Uncomment and edit as needed
+                            // sh 'ansible-playbook -i ${params.INVENTORY} --extra-vars "token=$NETBOX_TOKEN build_number=${BUILD_NUMBER}" ${params.PLAYBOOK_PATH}'
                             // sh 'curl -X POST -H "Authorization: Token $NETBOX_TOKEN" -H "Content-Type: application/json" --data "{\"build_number\": \"${BUILD_NUMBER}\"}" https://netbox.example/api/your-endpoint/'
                         }
                     } else {
                         echo "Deploying playbook to ${params.DEPLOY_TARGET}..."
-                        // sh 'ansible-playbook -i ${params.INVENTORY} --extra-vars "build_number=${BUILD_NUMBER}" ${params.PLAYBOOK_PATH}' // <-- Uncomment and edit as needed
+                        // sh 'ansible-playbook -i ${params.INVENTORY} --extra-vars "build_number=${BUILD_NUMBER}" ${params.PLAYBOOK_PATH}'
                     }
                 }
             }
         }
         stage('Notifications') {
+            agent { label 'master' }
             steps {
                 echo 'No notifications configured.'
-                // slackSend(color: 'good', message: "Ansible Lint & Deploy Pipeline Succeeded! Build #${BUILD_NUMBER}") // <-- Uncomment and configure
-                // emailext(subject: 'Pipeline Success', body: "Build #${BUILD_NUMBER} succeeded", recipientProviders: [developers()]) // <-- Uncomment and configure
+                // slackSend(color: 'good', message: "Ansible Lint & Deploy Pipeline Succeeded! Build #${BUILD_NUMBER}")
+                // emailext(subject: 'Pipeline Success', body: "Build #${BUILD_NUMBER} succeeded", recipientProviders: [developers()])
             }
         }
         stage('Cleanup') {
+            agent { label 'master' }
             steps {
                 echo 'No cleanup steps.'
-                // sh 'rm -f sensitive_file' // <-- Add cleanup commands as needed
+                // sh 'rm -f sensitive_file'
             }
         }
     }
