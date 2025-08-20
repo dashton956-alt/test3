@@ -32,13 +32,23 @@ pipeline {
             defaultValue: 'completed_playbooks',
             description: 'Folder in repo to copy completed playbooks to.'
         )
+        string(
+            name: 'GITHUB_CREDS_ID',
+            defaultValue: 'github-creds-id',
+            description: 'Jenkins credentials ID for GitHub access.'
+        )
+        string(
+            name: 'NETBOX_CREDS_ID',
+            defaultValue: 'netbox-token-id',
+            description: 'Jenkins credentials ID for NetBox API token.'
+        )
     }
 
-    // environment {
-    //     GITHUB_CREDENTIALS = credentials('github-creds-id') // <-- Uncomment and set if using private repo
-    //     NETBOX_TOKEN = credentials('netbox-token-id') // <-- Uncomment and set if deploying to NetBox
-    //     OTHER_DEPLOY_CRED = credentials('other-deploy-creds-id') // <-- For other targets
-    // }
+    environment {
+        GITHUB_CREDENTIALS = credentials(params.GITHUB_CREDS_ID)
+        NETBOX_TOKEN = credentials(params.NETBOX_CREDS_ID)
+        // OTHER_DEPLOY_CRED = credentials('other-deploy-creds-id') // <-- For other targets
+    }
 
     stages {
         stage('Install Ansible & Lint') {
@@ -50,8 +60,13 @@ pipeline {
         }
         stage('Checkout') {
             steps {
-                // checkout([$class: 'GitSCM', branches: [[name: params.GIT_BRANCH]], userRemoteConfigs: [[url: params.GIT_REPO, credentialsId: env.GITHUB_CREDENTIALS]]]) // <-- Use for private repo
-                git branch: params.GIT_BRANCH, url: params.GIT_REPO
+                checkout([$class: 'GitSCM',
+                    branches: [[name: params.GIT_BRANCH]],
+                    userRemoteConfigs: [[
+                        url: params.GIT_REPO,
+                        credentialsId: env.GITHUB_CREDENTIALS
+                    ]]
+                ])
             }
         }
         stage('Lint Ansible Playbook') {
@@ -67,7 +82,6 @@ pipeline {
                     sh "mkdir -p ${params.DEST_FOLDER}"
                     sh "cp ${params.PLAYBOOK_PATH} ${params.DEST_FOLDER}/"
                     // Git add, commit, and push with CI/CD build number
-                    // Uncomment and configure credentials if needed
                     // withCredentials([usernamePassword(credentialsId: env.GITHUB_CREDENTIALS, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
                     sh '''
                         git config user.name "ci-cd-bot"
