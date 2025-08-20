@@ -44,12 +44,6 @@ pipeline {
         )
     }
 
-    environment {
-        GITHUB_CREDENTIALS = credentials(params.GITHUB_CREDS_ID)
-        NETBOX_TOKEN = credentials(params.NETBOX_CREDS_ID)
-        // OTHER_DEPLOY_CRED = credentials('other-deploy-creds-id') // <-- For other targets
-    }
-
     stages {
         stage('Install Ansible & Lint') {
             steps {
@@ -60,37 +54,36 @@ pipeline {
         }
         stage('Checkout') {
             steps {
-                checkout([$class: 'GitSCM',
-                    branches: [[name: params.GIT_BRANCH]],
-                    userRemoteConfigs: [[
-                        url: params.GIT_REPO,
-                        credentialsId: env.GITHUB_CREDENTIALS
-                    ]]
-                ])
+                withCredentials([string(credentialsId: params.GITHUB_CREDS_ID, variable: 'GIT_TOKEN')]) {
+                    checkout([$class: 'GitSCM',
+                        branches: [[name: params.GIT_BRANCH]],
+                        userRemoteConfigs: [[
+                            url: params.GIT_REPO,
+                            credentialsId: params.GITHUB_CREDS_ID
+                        ]]
+                    ])
+                }
             }
         }
         stage('Lint Ansible Playbook') {
             steps {
-                // Optionally redirect output to a log file
                 sh "ansible-lint ${params.PLAYBOOK_PATH} | tee ansible-lint.log"
             }
         }
         stage('Copy & Commit Playbook') {
             steps {
-                script {
-                    // Copy playbook to destination folder
-                    sh "mkdir -p ${params.DEST_FOLDER}"
-                    sh "cp ${params.PLAYBOOK_PATH} ${params.DEST_FOLDER}/"
-                    // Git add, commit, and push with CI/CD build number
-                    // withCredentials([usernamePassword(credentialsId: env.GITHUB_CREDENTIALS, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                    sh '''
-                        git config user.name "ci-cd-bot"
-                        git config user.email "ci-cd-bot@example.com"
-                        git add ${params.DEST_FOLDER}/$(basename ${params.PLAYBOOK_PATH})
-                        git commit -m "CI/CD completed playbook: build #${BUILD_NUMBER}"
-                        git push origin HEAD:${params.GIT_BRANCH}
-                    '''
-                    // }
+                withCredentials([string(credentialsId: params.GITHUB_CREDS_ID, variable: 'GIT_TOKEN')]) {
+                    script {
+                        sh "mkdir -p ${params.DEST_FOLDER}"
+                        sh "cp ${params.PLAYBOOK_PATH} ${params.DEST_FOLDER}/"
+                        sh '''
+                            git config user.name "ci-cd-bot"
+                            git config user.email "ci-cd-bot@example.com"
+                            git add ${params.DEST_FOLDER}/$(basename ${params.PLAYBOOK_PATH})
+                            git commit -m "CI/CD completed playbook: build #${BUILD_NUMBER}"
+                            git push origin HEAD:${params.GIT_BRANCH}
+                        '''
+                    }
                 }
             }
         }
@@ -104,15 +97,14 @@ pipeline {
             steps {
                 script {
                     if (params.DEPLOY_TARGET == 'netbox') {
-                        echo 'Deploying playbook to NetBox...'
-                        // sh 'ansible-playbook -i ${params.INVENTORY} --extra-vars "token=${env.NETBOX_TOKEN} build_number=${BUILD_NUMBER}" ${params.PLAYBOOK_PATH}' // <-- Uncomment and edit as needed
-                        // Example: Send build number to NetBox via API
-                        // sh 'curl -X POST -H "Authorization: Token ${env.NETBOX_TOKEN}" -H "Content-Type: application/json" --data "{\"build_number\": \"${BUILD_NUMBER}\"}" https://netbox.example/api/your-endpoint/'
-                        // Add NetBox deployment logic here
+                        withCredentials([string(credentialsId: params.NETBOX_CREDS_ID, variable: 'NETBOX_TOKEN')]) {
+                            echo 'Deploying playbook to NetBox...'
+                            // sh 'ansible-playbook -i ${params.INVENTORY} --extra-vars "token=$NETBOX_TOKEN build_number=${BUILD_NUMBER}" ${params.PLAYBOOK_PATH}' // <-- Uncomment and edit as needed
+                            // sh 'curl -X POST -H "Authorization: Token $NETBOX_TOKEN" -H "Content-Type: application/json" --data "{\"build_number\": \"${BUILD_NUMBER}\"}" https://netbox.example/api/your-endpoint/'
+                        }
                     } else {
                         echo "Deploying playbook to ${params.DEPLOY_TARGET}..."
                         // sh 'ansible-playbook -i ${params.INVENTORY} --extra-vars "build_number=${BUILD_NUMBER}" ${params.PLAYBOOK_PATH}' // <-- Uncomment and edit as needed
-                        // Add other deployment logic here
                     }
                 }
             }
