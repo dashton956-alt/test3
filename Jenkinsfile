@@ -53,20 +53,6 @@ pipeline {
     }
 
     stages {
-        stage('Install Ansible & Lint') {
-            agent {
-                docker {
-                    image 'custom-jenkins-ansible'
-                    args '--network cicd-frontend'
-                    label 'docker'
-                    reuseNode true
-                }
-            }
-            steps {
-                sh 'ansible --version || true'
-                sh 'ansible-lint --version || true'
-            }
-        }
         stage('Checkout') {
             agent {
                 docker {
