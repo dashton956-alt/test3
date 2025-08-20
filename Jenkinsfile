@@ -54,9 +54,6 @@ pipeline {
                     reuseNode true
                 }
             }
-            options {
-                throttle(concurrentBuilds: 6)
-            }
             steps {
                 sh 'ansible --version || true'
                 sh 'ansible-lint --version || true'
@@ -70,9 +67,6 @@ pipeline {
                     label 'docker'
                     reuseNode true
                 }
-            }
-            options {
-                throttle(concurrentBuilds: 6)
             }
             steps {
                 withCredentials([string(credentialsId: params.GITHUB_CREDS_ID, variable: 'GIT_TOKEN')]) {
@@ -95,9 +89,6 @@ pipeline {
                     reuseNode true
                 }
             }
-            options {
-                throttle(concurrentBuilds: 6)
-            }
             steps {
                 sh "ansible-lint ${params.PLAYBOOK_PATH} | tee ansible-lint.log"
             }
@@ -110,9 +101,6 @@ pipeline {
                     label 'docker'
                     reuseNode true
                 }
-            }
-            options {
-                throttle(concurrentBuilds: 6)
             }
             steps {
                 withCredentials([string(credentialsId: params.GITHUB_CREDS_ID, variable: 'GIT_TOKEN')]) {
