@@ -46,13 +46,7 @@ pipeline {
 
     stages {
         stage('Checkout') {
-            agent {
-                docker {
-                    image 'custom-jenkins-ansible:local'
-                    alwaysPull false
-                    reuseNode true
-                }
-            }
+            agent { label 'master' }
             steps {
                 sh 'echo "DEBUG: Agent image info:" && cat /etc/os-release || true'
                 sh 'echo "DEBUG: Docker version:" && (docker --version || echo "docker not found")'
@@ -68,25 +62,13 @@ pipeline {
             }
         }
         stage('Lint Ansible Playbook') {
-            agent {
-                docker {
-                    image 'custom-jenkins-ansible:local'
-                    alwaysPull false
-                    reuseNode true
-                }
-            }
+            agent { label 'master' }
             steps {
                 sh "ansible-lint ${params.PLAYBOOK_PATH} | tee ansible-lint.log"
             }
         }
         stage('Copy & Commit Playbook') {
-            agent {
-                docker {
-                    image 'custom-jenkins-ansible:local'
-                    alwaysPull false
-                    reuseNode true
-                }
-            }
+            agent { label 'master' }
             steps {
                 withCredentials([string(credentialsId: params.GITHUB_CREDS_ID, variable: 'GIT_TOKEN')]) {
                     script {
