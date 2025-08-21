@@ -129,16 +129,17 @@ pipeline {
                                                         # Remove any remaining files from pending folder
                                                         rm -f N8N_Netbox_Pending/* || true
                                                 '''
-                                                // Commit and push passed files to main branch
+                                                // Commit and push passed files and pending folder cleanup to main branch
                                                 sh '''
                                                         cd repo_tmp
                                                         git config user.name "ci-cd-bot"
                                                         git config user.email "ci-cd-bot@example.com"
                                                         git add N8N_Netbox_complete/* || true
+                                                        git add -u N8N_Netbox_Pending || true
                                                         if git diff --cached --quiet; then
-                                                            echo "No completed files to commit."
+                                                            echo "No completed files or pending folder changes to commit."
                                                         else
-                                                            git commit -m "CI/CD completed playbooks: build #${BUILD_NUMBER}"
+                                                            git commit -m "CI/CD completed playbooks and cleaned pending: build #${BUILD_NUMBER}"
                                                             git push https://${GIT_TOKEN}:x-oauth-basic@${GIT_REPO#https://} HEAD:${GIT_BRANCH}
                                                         fi
                                                 '''
