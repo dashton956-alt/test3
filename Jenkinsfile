@@ -49,7 +49,7 @@ pipeline {
             agent any
             steps {
                 // Install Ansible and ansible-lint if not present
-                sh 'which ansible || (apt-get update && apt-get install -y python3-pip && pip3 install ansible ansible-lint)'
+                sh 'which ansible || (apt-get update && apt-get install -y python3-pip && pip3 install --break-system-packages ansible ansible-lint)'
                 withCredentials([string(credentialsId: params.GITHUB_CREDS_ID, variable: 'GIT_TOKEN')]) {
                     // Clone the repo to a temp dir
                     sh '''
