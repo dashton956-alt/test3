@@ -48,7 +48,7 @@ pipeline {
     }
 
     stages {
-        stage('Checkout & Find New YAML Files') {
+        stage('Checkout & Find Files') {
             agent any
             steps {
                 // Install Ansible and ansible-lint if not present
@@ -61,17 +61,17 @@ pipeline {
                     '''
                 }
                 script {
-                    // Find any new files in N8N_Netbox_Pending folder in the last commit
-                    env.NEW_FILES = sh(
-                        script: '''cd repo_tmp && git log -1 --name-status --pretty="" | grep '^A' | grep 'N8N_Netbox_Pending/' | awk '{print $2}' | xargs''',
+                    // Find all files in N8N_Netbox_Pending folder
+                    env.FILES_TO_PROCESS = sh(
+                        script: '''cd repo_tmp && find N8N_Netbox_Pending -type f | xargs''',
                         returnStdout: true
                     ).trim()
-                    if (!env.NEW_FILES) {
-                        echo 'No new files found in N8N_Netbox_Pending. Skipping pipeline.'
+                    if (!env.FILES_TO_PROCESS) {
+                        echo 'No files found in N8N_Netbox_Pending. Skipping pipeline.'
                         currentBuild.result = 'SUCCESS'
-                        error('No new files to process.')
+                        error('No files to process.')
                     } else {
-                        echo "New files: ${env.NEW_FILES}"
+                        echo "Files to process: ${env.FILES_TO_PROCESS}"
                     }
                 }
             }
@@ -80,7 +80,7 @@ pipeline {
             agent any
             steps {
                 script {
-                    for (file in env.NEW_FILES.tokenize()) {
+                    for (file in env.FILES_TO_PROCESS.tokenize()) {
                         // Example: process any file (replace with your logic)
                         sh "echo Processing repo_tmp/${file}"
                         // If you want to lint only .yml files, add a check here
