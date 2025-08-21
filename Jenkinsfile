@@ -80,40 +80,83 @@ pipeline {
             agent any
             steps {
                 script {
+                    env.LINT_FAIL_FILES = ''
+                    env.LINT_PASS_FILES = ''
+                    def mdFile = "lint-failures-${env.BUILD_NUMBER}.md"
+                    writeFile file: "repo_tmp/${mdFile}", text: "# Lint Failures for Build #${env.BUILD_NUMBER}\n\n"
                     for (file in env.FILES_TO_PROCESS.tokenize()) {
                         def lintLog = "ansible-lint-${file.replaceAll('[^a-zA-Z0-9_.-]', '_')}.log"
                         echo "Linting repo_tmp/${file}..."
                         def result = sh(
-                            script: "ansible-lint repo_tmp/${file} > ${lintLog} 2>&1",
+                            script: "ansible-lint repo_tmp/${file} > repo_tmp/${lintLog} 2>&1",
                             returnStatus: true
                         )
                         if (result == 0) {
                             echo "Lint PASSED for ${file}"
+                            env.LINT_PASS_FILES += file + ' '
                         } else {
                             echo "Lint FAILED for ${file}. See below:"
-                            echo readFile(lintLog)
+                            def lintErr = readFile("repo_tmp/${lintLog}")
+                            echo lintErr
+                            env.LINT_FAIL_FILES += file + ' '
+                            writeFile file: "repo_tmp/${mdFile}", text: readFile("repo_tmp/${mdFile}") + "## ${file}\n\n\`\`\`\n${lintErr}\n\`\`\`\n\n"
                         }
                     }
                 }
             }
         }
         stage('Copy & Commit Playbook') {
-            agent any
-            steps {
-                withCredentials([string(credentialsId: params.GITHUB_CREDS_ID, variable: 'GIT_TOKEN')]) {
-                    script {
-                        sh "cd repo_tmp && mkdir -p N8N_Netbox_complete && mv ../${params.PLAYBOOK_PATH} N8N_Netbox_complete/"
-                        sh '''
-                            cd repo_tmp
-                            git config user.name "ci-cd-bot"
-                            git config user.email "ci-cd-bot@example.com"
-                            git add N8N_Netbox_complete/$(basename ../${params.PLAYBOOK_PATH})
-                            git commit -m "CI/CD completed playbook: build #${BUILD_NUMBER}"
-                            git push https://${GIT_TOKEN}:x-oauth-basic@${GIT_REPO#https://} HEAD:${GIT_BRANCH}
-                        '''
-                    }
-                }
-            }
+                        agent any
+                        steps {
+                                withCredentials([string(credentialsId: params.GITHUB_CREDS_ID, variable: 'GIT_TOKEN')]) {
+                                        script {
+                                                sh '''
+                                                        cd repo_tmp
+                                                        mkdir -p N8N_Netbox_complete N8N_Netbox_Lint_failure
+                                                        # Move passed files to complete, failed to failure, and remove from pending
+                                                        for f in ${LINT_PASS_FILES}; do
+                                                            [ -f "$f" ] && mv "$f" N8N_Netbox_complete/;
+                                                        done
+                                                        for f in ${LINT_FAIL_FILES}; do
+                                                            [ -f "$f" ] && mv "$f" N8N_Netbox_Lint_failure/;
+                                                        done
+                                                        # Remove all processed files from pending
+                                                        for f in ${LINT_PASS_FILES} ${LINT_FAIL_FILES}; do
+                                                            [ -f "N8N_Netbox_Pending/$(basename $f)" ] && rm -f "N8N_Netbox_Pending/$(basename $f)";
+                                                        done
+                                                '''
+                                                // Commit and push passed files to main branch
+                                                sh '''
+                                                        cd repo_tmp
+                                                        git config user.name "ci-cd-bot"
+                                                        git config user.email "ci-cd-bot@example.com"
+                                                        git add N8N_Netbox_complete/* || true
+                                                        if git diff --cached --quiet; then
+                                                            echo "No completed files to commit."
+                                                        else
+                                                            git commit -m "CI/CD completed playbooks: build #${BUILD_NUMBER}"
+                                                            git push https://${GIT_TOKEN}:x-oauth-basic@${GIT_REPO#https://} HEAD:${GIT_BRANCH}
+                                                        fi
+                                                '''
+                                                // If there are failed files, create a branch, commit, and push
+                                                sh '''
+                                                        cd repo_tmp
+                                                        if [ -n "${LINT_FAIL_FILES}" ]; then
+                                                            branch=lint-failed-${BUILD_NUMBER}
+                                                            git checkout -b $branch
+                                                            git add N8N_Netbox_Lint_failure/* lint-failures-${BUILD_NUMBER}.md || true
+                                                            if git diff --cached --quiet; then
+                                                                echo "No failed files to commit."
+                                                            else
+                                                                git commit -m "Lint failures: build #${BUILD_NUMBER}"
+                                                                git push https://${GIT_TOKEN}:x-oauth-basic@${GIT_REPO#https://} HEAD:$branch
+                                                            fi
+                                                            git checkout ${GIT_BRANCH}
+                                                        fi
+                                                '''
+                                        }
+                                }
+                        }
         }
         stage('Deploy') {
             agent any
