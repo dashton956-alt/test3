@@ -51,8 +51,7 @@ pipeline {
         stage('Checkout & Find Files') {
             agent any
             steps {
-                // Install Ansible and ansible-lint if not present
-                sh 'which ansible || (apt-get update && apt-get install -y python3-pip && pip3 install --break-system-packages ansible ansible-lint)'
+                // ...existing code...
                 withCredentials([string(credentialsId: params.GITHUB_CREDS_ID, variable: 'GIT_TOKEN')]) {
                     // Clone the repo to a temp dir
                     sh '''
@@ -79,10 +78,7 @@ pipeline {
         stage('Lint Ansible Playbook') {
             agent any
             steps {
-                // Install NetBox collection only if not already present
-                sh '''
-                    ansible-galaxy collection list | grep -q netbox.netbox || ansible-galaxy collection install netbox.netbox
-                '''
+                // ...existing code...
                 script {
                     env.LINT_FAIL_FILES = ''
                     env.LINT_PASS_FILES = ''
@@ -175,8 +171,7 @@ pipeline {
                 }
             }
             steps {
-                // Ensure pynetbox is installed before deploy
-                sh 'pip3 install --break-system-packages pynetbox'
+                // ...existing code...
                 script {
                     def passedFiles = env.LINT_PASS_FILES?.tokenize() ?: []
                     if (passedFiles.size() == 0) {
