@@ -99,7 +99,9 @@ pipeline {
                             def lintErr = readFile("repo_tmp/${lintLog}")
                             echo lintErr
                             env.LINT_FAIL_FILES += file + ' '
-                            writeFile file: "repo_tmp/${mdFile}", text: readFile("repo_tmp/${mdFile}") + "## ${file}\n\n\`\`\`\n${lintErr}\n\`\`\`\n\n"
+                            def prev = readFile("repo_tmp/${mdFile}")
+                            def mdBlock = """## ${file}\n\n```\n${lintErr}\n```\n\n"""
+                            writeFile file: "repo_tmp/${mdFile}", text: prev + mdBlock
                         }
                     }
                 }
