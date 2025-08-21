@@ -79,6 +79,10 @@ pipeline {
         stage('Lint Ansible Playbook') {
             agent any
             steps {
+                // Install NetBox collection only if not already present
+                sh '''
+                    ansible-galaxy collection list | grep -q netbox.netbox || ansible-galaxy collection install netbox.netbox
+                '''
                 script {
                     env.LINT_FAIL_FILES = ''
                     env.LINT_PASS_FILES = ''
