@@ -37,12 +37,12 @@ pipeline {
         )
         string(
             name: 'GITHUB_CREDS_ID',
-            defaultValue: '40b29ecf-72cd-4262-bb38-fe1dbe9bf47e',
+            defaultValue: 'GitHub',
             description: 'Jenkins credentials ID for GitHub access.'
         )
         string(
             name: 'NETBOX_CREDS_ID',
-            defaultValue: '8cdf19b1-2e05-4b2d-b317-66a148163fa4',
+            defaultValue: 'Netbox',
             description: 'Jenkins credentials ID for NetBox API token.'
         )
     }
