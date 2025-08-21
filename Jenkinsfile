@@ -186,16 +186,14 @@ pipeline {
                             for (file in passedFiles) {
                                 def playbookPath = "repo_tmp/N8N_Netbox_complete/" + file.tokenize('/').last()
                                 echo "Deploying ${playbookPath} to NetBox..."
-                                // Uncomment and adjust the following as needed:
-                                // sh "ansible-playbook -i ${params.INVENTORY} --extra-vars 'token=$NETBOX_TOKEN build_number=${BUILD_NUMBER}' ${playbookPath}"
+                                sh "ansible-playbook ${playbookPath} --extra-vars 'netbox_token=$NETBOX_TOKEN'"
                             }
                         }
                     } else {
                         for (file in passedFiles) {
                             def playbookPath = "repo_tmp/N8N_Netbox_complete/" + file.tokenize('/').last()
                             echo "Deploying ${playbookPath} to ${params.DEPLOY_TARGET}..."
-                            // Uncomment and adjust the following as needed:
-                            // sh "ansible-playbook -i ${params.INVENTORY} --extra-vars 'build_number=${BUILD_NUMBER}' ${playbookPath}"
+                            sh "ansible-playbook -i ${params.INVENTORY} --extra-vars 'build_number=${BUILD_NUMBER}' ${playbookPath}"
                         }
                     }
                 }
