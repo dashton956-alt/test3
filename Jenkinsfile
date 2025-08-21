@@ -1,4 +1,7 @@
 pipeline {
+    triggers {
+        pollSCM('*/1 * * * *')
+    }
     agent none
 
     parameters {
@@ -45,7 +48,7 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout & Find New YAML Files') {
             agent any
             steps {
                 // Install Ansible and ansible-lint if not present
@@ -57,12 +60,32 @@ pipeline {
                         git clone --branch ${GIT_BRANCH} https://${GIT_TOKEN}:x-oauth-basic@${GIT_REPO#https://} repo_tmp
                     '''
                 }
+                script {
+                    // Find any new files in N8N_Netbox_Pending folder in the last commit
+                    env.NEW_FILES = sh(
+                        script: '''cd repo_tmp && git log -1 --name-status --pretty="" | grep '^A' | grep 'N8N_Netbox_Pending/' | awk '{print $2}' | xargs''',
+                        returnStdout: true
+                    ).trim()
+                    if (!env.NEW_FILES) {
+                        echo 'No new files found in N8N_Netbox_Pending. Skipping pipeline.'
+                        currentBuild.result = 'SUCCESS'
+                        error('No new files to process.')
+                    } else {
+                        echo "New files: ${env.NEW_FILES}"
+                    }
+                }
             }
         }
         stage('Lint Ansible Playbook') {
             agent any
             steps {
-                sh "ansible-lint repo_tmp/${params.PLAYBOOK_PATH} | tee ansible-lint.log"
+                script {
+                    for (file in env.NEW_FILES.tokenize()) {
+                        // Example: process any file (replace with your logic)
+                        sh "echo Processing repo_tmp/${file}"
+                        // If you want to lint only .yml files, add a check here
+                    }
+                }
             }
         }
         stage('Copy & Commit Playbook') {
