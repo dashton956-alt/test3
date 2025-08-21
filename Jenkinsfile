@@ -2,7 +2,7 @@ pipeline {
     triggers {
         pollSCM('*/1 * * * *')
     }
-    agent none
+    // agent none removed; each stage uses agent any
 
     parameters {
         choice(
@@ -81,9 +81,18 @@ pipeline {
             steps {
                 script {
                     for (file in env.FILES_TO_PROCESS.tokenize()) {
-                        // Example: process any file (replace with your logic)
-                        sh "echo Processing repo_tmp/${file}"
-                        // If you want to lint only .yml files, add a check here
+                        def lintLog = "ansible-lint-${file.replaceAll('[^a-zA-Z0-9_.-]', '_')}.log"
+                        echo "Linting repo_tmp/${file}..."
+                        def result = sh(
+                            script: "ansible-lint repo_tmp/${file} > ${lintLog} 2>&1",
+                            returnStatus: true
+                        )
+                        if (result == 0) {
+                            echo "Lint PASSED for ${file}"
+                        } else {
+                            echo "Lint FAILED for ${file}. See below:"
+                            echo readFile(lintLog)
+                        }
                     }
                 }
             }
