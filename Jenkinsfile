@@ -48,7 +48,7 @@ pipeline {
         stage('Checkout') {
             agent {
                 docker {
-                    image 'custom-jenkins-ansible'
+                    image 'custom-jenkins-ansible:local'
                     reuseNode true
                 }
             }
@@ -69,7 +69,7 @@ pipeline {
         stage('Lint Ansible Playbook') {
             agent {
                 docker {
-                    image 'custom-jenkins-ansible'
+                    image 'custom-jenkins-ansible:local'
                     reuseNode true
                 }
             }
@@ -80,7 +80,7 @@ pipeline {
         stage('Copy & Commit Playbook') {
             agent {
                 docker {
-                    image 'custom-jenkins-ansible'
+                    image 'custom-jenkins-ansible:local'
                     reuseNode true
                 }
             }
