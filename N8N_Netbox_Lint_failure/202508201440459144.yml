@@ -1,0 +1,20 @@
+---
+- name: Configure customer port on undefined
+  hosts: switches
+  gather_facts: no
+  tasks:
+    - name: Configure port
+      netbox_port:
+        interface_id: 4
+        interface_name: Port 4
+        port_name: undefined-Port 4
+        port_mode: tagged
+        port_speed: 1G
+        port_type: customer
+        vlan_id: 100
+        enabled: true
+        description: Customer port on undefined
+        node:
+          id: undefined
+          name: undefined
+          site: undefined
