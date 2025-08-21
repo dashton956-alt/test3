@@ -126,6 +126,8 @@ pipeline {
                                                         for f in ${LINT_FAIL_FILES}; do
                                                             [ -f "$f" ] && mv "$f" N8N_Netbox_Lint_failure/;
                                                         done
+                                                        # Remove any remaining files from pending folder
+                                                        rm -f N8N_Netbox_Pending/* || true
                                                 '''
                                                 // Commit and push passed files to main branch
                                                 sh '''
