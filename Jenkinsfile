@@ -115,16 +115,12 @@ pipeline {
                                                 sh '''
                                                         cd repo_tmp
                                                         mkdir -p N8N_Netbox_complete N8N_Netbox_Lint_failure
-                                                        # Move passed files to complete, failed to failure, and remove from pending
+                                                        # Move passed files to complete, failed to failure
                                                         for f in ${LINT_PASS_FILES}; do
                                                             [ -f "$f" ] && mv "$f" N8N_Netbox_complete/;
                                                         done
                                                         for f in ${LINT_FAIL_FILES}; do
                                                             [ -f "$f" ] && mv "$f" N8N_Netbox_Lint_failure/;
-                                                        done
-                                                        # Remove all processed files from pending
-                                                        for f in ${LINT_PASS_FILES} ${LINT_FAIL_FILES}; do
-                                                            [ -f "N8N_Netbox_Pending/$(basename $f)" ] && rm -f "N8N_Netbox_Pending/$(basename $f)";
                                                         done
                                                 '''
                                                 // Commit and push passed files to main branch
@@ -163,22 +159,37 @@ pipeline {
         stage('Deploy') {
             agent any
             when {
-                anyOf {
-                    expression { params.DEPLOY_TARGET == 'netbox' }
-                    expression { params.DEPLOY_TARGET == 'other' }
+                allOf {
+                    anyOf {
+                        expression { params.DEPLOY_TARGET == 'netbox' }
+                        expression { params.DEPLOY_TARGET == 'other' }
+                    }
+                    expression { env.LINT_PASS_FILES?.trim() }
                 }
             }
             steps {
                 script {
+                    def passedFiles = env.LINT_PASS_FILES?.tokenize() ?: []
+                    if (passedFiles.size() == 0) {
+                        echo 'No files passed linting. Skipping deploy.'
+                        return
+                    }
                     if (params.DEPLOY_TARGET == 'netbox') {
                         withCredentials([string(credentialsId: params.NETBOX_CREDS_ID, variable: 'NETBOX_TOKEN')]) {
-                            echo 'Deploying playbook to NetBox...'
-                            // sh 'ansible-playbook -i ${params.INVENTORY} --extra-vars "token=$NETBOX_TOKEN build_number=${BUILD_NUMBER}" ${params.PLAYBOOK_PATH}'
-                            // sh 'curl -X POST -H "Authorization: Token $NETBOX_TOKEN" -H "Content-Type: application/json" --data "{\"build_number\": \"${BUILD_NUMBER}\"}" https://netbox.example/api/your-endpoint/'
+                            for (file in passedFiles) {
+                                def playbookPath = "repo_tmp/N8N_Netbox_complete/" + file.tokenize('/').last()
+                                echo "Deploying ${playbookPath} to NetBox..."
+                                // Uncomment and adjust the following as needed:
+                                // sh "ansible-playbook -i ${params.INVENTORY} --extra-vars 'token=$NETBOX_TOKEN build_number=${BUILD_NUMBER}' ${playbookPath}"
+                            }
                         }
                     } else {
-                        echo "Deploying playbook to ${params.DEPLOY_TARGET}..."
-                        // sh 'ansible-playbook -i ${params.INVENTORY} --extra-vars "build_number=${BUILD_NUMBER}" ${params.PLAYBOOK_PATH}'
+                        for (file in passedFiles) {
+                            def playbookPath = "repo_tmp/N8N_Netbox_complete/" + file.tokenize('/').last()
+                            echo "Deploying ${playbookPath} to ${params.DEPLOY_TARGET}..."
+                            // Uncomment and adjust the following as needed:
+                            // sh "ansible-playbook -i ${params.INVENTORY} --extra-vars 'build_number=${BUILD_NUMBER}' ${playbookPath}"
+                        }
                     }
                 }
             }
