@@ -48,23 +48,21 @@ pipeline {
         stage('Checkout') {
             agent any
             steps {
-                sh 'echo "DEBUG: Agent image info:" && cat /etc/os-release || true'
-                sh 'echo "DEBUG: Docker version:" && (docker --version || echo "docker not found")'
+                // Install Ansible and ansible-lint if not present
+                sh 'which ansible || (sudo apt-get update && sudo apt-get install -y python3-pip && pip3 install ansible ansible-lint)'
                 withCredentials([string(credentialsId: params.GITHUB_CREDS_ID, variable: 'GIT_TOKEN')]) {
-                    checkout([$class: 'GitSCM',
-                        branches: [[name: params.GIT_BRANCH]],
-                        userRemoteConfigs: [[
-                            url: params.GIT_REPO,
-                            credentialsId: params.GITHUB_CREDS_ID
-                        ]]
-                    ])
+                    // Clone the repo to a temp dir
+                    sh '''
+                        rm -rf repo_tmp && mkdir repo_tmp
+                        git clone --branch ${GIT_BRANCH} https://${GIT_TOKEN}:x-oauth-basic@${GIT_REPO#https://} repo_tmp
+                    '''
                 }
             }
         }
         stage('Lint Ansible Playbook') {
             agent any
             steps {
-                sh "ansible-lint ${params.PLAYBOOK_PATH} | tee ansible-lint.log"
+                sh "ansible-lint repo_tmp/${params.PLAYBOOK_PATH} | tee ansible-lint.log"
             }
         }
         stage('Copy & Commit Playbook') {
@@ -72,14 +70,14 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: params.GITHUB_CREDS_ID, variable: 'GIT_TOKEN')]) {
                     script {
-                        sh "mkdir -p ${params.DEST_FOLDER}"
-                        sh "cp ${params.PLAYBOOK_PATH} ${params.DEST_FOLDER}/"
+                        sh "cd repo_tmp && mkdir -p N8N_Netbox_complete && mv ../${params.PLAYBOOK_PATH} N8N_Netbox_complete/"
                         sh '''
+                            cd repo_tmp
                             git config user.name "ci-cd-bot"
                             git config user.email "ci-cd-bot@example.com"
-                            git add ${params.DEST_FOLDER}/$(basename ${params.PLAYBOOK_PATH})
+                            git add N8N_Netbox_complete/$(basename ../${params.PLAYBOOK_PATH})
                             git commit -m "CI/CD completed playbook: build #${BUILD_NUMBER}"
-                            git push origin HEAD:${params.GIT_BRANCH}
+                            git push https://${GIT_TOKEN}:x-oauth-basic@${GIT_REPO#https://} HEAD:${GIT_BRANCH}
                         '''
                     }
                 }
