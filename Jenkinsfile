@@ -175,6 +175,8 @@ pipeline {
                 }
             }
             steps {
+                // Ensure pynetbox is installed before deploy
+                sh 'pip3 install --break-system-packages pynetbox'
                 script {
                     def passedFiles = env.LINT_PASS_FILES?.tokenize() ?: []
                     if (passedFiles.size() == 0) {
@@ -186,7 +188,9 @@ pipeline {
                             for (file in passedFiles) {
                                 def playbookPath = "repo_tmp/N8N_Netbox_complete/" + file.tokenize('/').last()
                                 echo "Deploying ${playbookPath} to NetBox..."
-                                sh "ansible-playbook ${playbookPath} --extra-vars 'netbox_token=$NETBOX_TOKEN'"
+                                withEnv(["NB_TOKEN=${NETBOX_TOKEN}"]) {
+                                    sh "ansible-playbook ${playbookPath} --extra-vars netbox_token=\"$NB_TOKEN\""
+                                }
                             }
                         }
                     } else {
