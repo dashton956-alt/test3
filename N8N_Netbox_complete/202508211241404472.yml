@@ -1,0 +1,28 @@
+---
+- name: Configure customer port on 999123-Fox-and-Goose-SW-01
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Configure port in NetBox
+      netbox.netbox.netbox_device_interface:
+        netbox_url: "undefined"   # mandatory
+        netbox_token: "undefined"   # mandatory
+        validate_certs: false
+        data:
+          device: "999123-Fox-and-Goose-SW-01"           # mandatory
+          name: "Port 4"      # mandatory
+          type: "1000base-t"            # mandatory for creation
+          enabled: true
+          mtu: 1500
+          mac_address: "00:11:22:33:44:55"
+          mode: null
+          mgmt_only: false
+          untagged_vlan: null
+          tagged_vlans: []
+          lag: null
+          description: "Customer port on 999123-Fox-and-Goose-SW-01"
+          custom_fields: {}
+          tags: []
+        state: present                  # mandatory
