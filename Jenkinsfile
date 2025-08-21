@@ -2,7 +2,7 @@ pipeline {
     triggers {
         pollSCM('*/1 * * * *')
     }
-    // agent none removed; each stage uses agent any
+    agent any
 
     parameters {
         choice(
