@@ -49,6 +49,7 @@ pipeline {
             agent {
                 docker {
                     image 'custom-jenkins-ansible:local'
+                    pull false
                     reuseNode true
                 }
             }
@@ -70,6 +71,7 @@ pipeline {
             agent {
                 docker {
                     image 'custom-jenkins-ansible:local'
+                    pull false
                     reuseNode true
                 }
             }
@@ -81,6 +83,7 @@ pipeline {
             agent {
                 docker {
                     image 'custom-jenkins-ansible:local'
+                    pull false
                     reuseNode true
                 }
             }
